@@ -38,7 +38,7 @@
 <script>
 import forge from "node-forge";
 import Swal from "sweetalert2";
-import axios from "axios";
+import instance from "../config/http-client.gateway";
 
 export default {
   data() {
@@ -55,65 +55,18 @@ export default {
     async submitLogin() {
       const email = this.credentials.email;
       const password = this.credentials.password;
-      const jsonObject = { email, password };
-      const jsonString = JSON.stringify(jsonObject);
-
-      const secretKey = "el@ConGr3z041!12";
-      if (!secretKey) {
-        throw new Error("La clave secreta no existe padre");
-      }
-
-      // Crear un objeto cipher utilizando la clave secreta
-      const cipher = forge.cipher.createCipher("AES-CBC", secretKey);
-
-      // Generar un IV (Initialization Vector) aleatorio
-      const iv = forge.random.getBytesSync(16);
-
-      // Actualizar el objeto cipher con el IV
-      cipher.start({ iv });
-
-      // Encriptar la cadena JSON
-      cipher.update(forge.util.createBuffer(jsonString, "utf8"));
-      cipher.finish();
-      const encryptedData = forge.util.encode64(iv + cipher.output.getBytes());
-      const encodedDataPost = encodeURIComponent(encryptedData);
       try {
-        const response = await axios.post(
-          "http://localhost:8080/api/auth/",
-          encodedDataPost,
-          { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-        );
+        const response = await instance.doPost("/auth/", {
+          email: email,
+          password: password,
+        })
 
-        const encryptedData2 = response.data;
+        console.log(response.data);
 
-        // Decodificar la cadena encriptada desde base64
-        const decodedEncryptedData = forge.util.decode64(encryptedData2);
-
-        // Extraer el IV y los datos encriptados de la cadena
-        const iv2 = decodedEncryptedData.slice(0, 16); // Suponiendo que el IV es de 16 bytes
-        const encryptedBytes = decodedEncryptedData.slice(16);
-
-        // Crear un objeto Buffer para los bytes encriptados
-        const encryptedBuffer = forge.util.createBuffer(encryptedBytes, "raw");
-
-        // Crear un descifrador
-        const decipher = forge.cipher.createDecipher("AES-CBC", secretKey);
-
-        // Establecer el IV
-        decipher.start({ iv: iv2 });
-
-        // Actualizar el descifrador con los datos encriptados
-        decipher.update(encryptedBuffer);
-
-        // Finalizar la operación de descifrado
-        const decryptedData = decipher.finish(); // Devuelve true si la operación fue exitosa
-        const decryptedString = decipher.output.toString("utf8");
-        // Parsear la cadena desencriptada a JSON
-        const decryptedJson = JSON.parse(decryptedString);
-        if (decryptedJson) {
+        if (response.status === 200) {
           await Swal.fire({
             title: "¡Bienvenido!",
-            text: `Has ingresado como ${decryptedJson.username}`,
+            text: `Has ingresado como ${response.data.username}`,
             icon: "success",
           });
         }

@@ -22,6 +22,7 @@ public class authController {
         String decryptedString = Encrypt.decrypt(dataPost);
         JSONObject jsonObject = new JSONObject(decryptedString);
 
+        System.out.println(jsonObject.toString());
         String email = jsonObject.getString("email");
         String password = jsonObject.getString("password");
         BeanToAuth toAuth = new BeanToAuth(email, password);
